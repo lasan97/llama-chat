@@ -1,2 +1,2 @@
 
-export { Chat } from "./Chat";
+export { Chat } from "../pages/Chat";

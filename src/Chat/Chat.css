@@ -81,3 +81,26 @@ textarea {
   max-height: 150px;
   object-fit: contain;
 }
+
+.preview-image {
+  max-width: 150px;
+  max-height: 150px;
+  object-fit: contain;
+  margin-top: 10px;
+}
+
+.model-selector {
+  margin-bottom: 20px;
+}
+
+.model-selector select {
+  padding: 5px;
+  font-size: 16px;
+}
+
+.spinner {
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}

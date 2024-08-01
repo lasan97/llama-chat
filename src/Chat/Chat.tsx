@@ -11,22 +11,24 @@ interface Message {
   images?: string[];
 }
 
+const models = ['llama3.1', 'llava']; // 모델 리스트
+
 export const Chat = (): JSX.Element => {
   const [messages, setMessages] = useState<Array<{ text: string, isUser: boolean, images?: string[] }>>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState(models[0]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() === '' && !selectedImage || isLoading) return;
+    if ((input.trim() === '' && !selectedImage) || isLoading) return;
 
     const newMessage = { text: input, isUser: true, images: selectedImage ? [selectedImage] : undefined };
-    const newMessages = [...messages, newMessage];
-    setMessages(newMessages);
+    setMessages(prevMessages => [...prevMessages, newMessage]);
     setInput('');
     setSelectedImage(null);
     if (fileInputRef.current) {
@@ -34,10 +36,10 @@ export const Chat = (): JSX.Element => {
     }
     setIsLoading(true);
 
-    const formattedMessages: Message[] = newMessages.map(message => ({
+    const formattedMessages: Message[] = [...messages, newMessage].map(message => ({
       role: message.isUser ? 'user' : 'assistant',
       content: message.text,
-      images: message.images?.map(img => img.split(',')[1]), // Remove the data URL prefix
+      images: message.images?.map(img => img.split(',')[1]),
     }));
 
     let fullResponse = '';
@@ -46,6 +48,7 @@ export const Chat = (): JSX.Element => {
 
     try {
       await sendMessageToLlama(
+        selectedModel,
         formattedMessages,
         (chunk) => {
           fullResponse += chunk;
@@ -75,6 +78,7 @@ export const Chat = (): JSX.Element => {
         console.log('Fetch aborted');
       } else {
         console.error('Error sending message:', error);
+        alert('메시지를 보내는 도중 오류가 발생했습니다. 다시 시도해 주세요.');
       }
       setIsLoading(false);
       setAbortController(null);
@@ -113,7 +117,22 @@ export const Chat = (): JSX.Element => {
 
   return (
     <div className="chat-container">
-      <h1>LLaMA 3.1 Chat</h1>
+      <h1>AI Chat</h1>
+      <div className="model-selector">
+        <label htmlFor="model-select">AI 모델 선택: </label>
+        <select
+          id="model-select"
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          disabled={isLoading}
+        >
+          {models.map((model) => (
+            <option key={model} value={model}>
+              {model}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="messages-container">
         {messages.map((message, index) => (
           <div key={index} className={`message ${message.isUser ? 'user' : 'ai'}`}>
@@ -154,17 +173,17 @@ export const Chat = (): JSX.Element => {
       <div className="input-container">
         {isLoading && (
           <button onClick={handleStopResponse} className="stop-button">
-            Stop
+            중지
           </button>
         )}
         <form onSubmit={handleSendMessage} className="input-form">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message here..."
+            placeholder="메시지를 입력하세요..."
             disabled={isLoading}
             onKeyDown={handleKeyDown}
-            rows={3} // Set the number of visible rows
+            rows={3}
           />
           <input
             type="file"
@@ -173,11 +192,13 @@ export const Chat = (): JSX.Element => {
             disabled={isLoading}
             ref={fileInputRef}
           />
+          {selectedImage && <img src={selectedImage} alt="Preview" className="uploaded-image preview-image" />}
           <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send'}
+            {isLoading ? '전송 중...' : '전송'}
           </button>
         </form>
       </div>
+      {isLoading && <div className="spinner">로딩 중...</div>}
     </div>
   );
 }

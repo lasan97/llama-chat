@@ -15,6 +15,7 @@ interface Message {
 }
 
 export const sendMessageToLlama = async (
+  model: string,
   messages: Message[],
   onChunk: (chunk: string) => void,
   onComplete: (fullResponse: string) => void,
@@ -27,10 +28,10 @@ export const sendMessageToLlama = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "llama3.1",
+        model: model,
         messages: messages,
       }),
-      signal, // Add this line to pass the AbortSignal
+      signal,
     });
 
     if (!response.ok) {
